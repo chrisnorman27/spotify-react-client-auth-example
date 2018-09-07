@@ -1,6 +1,7 @@
 import { call, take, put, takeLatest, all } from 'redux-saga/effects';
 import { replace } from 'react-router-redux';
 import { AUTH_FAILURE, AUTH_REQUEST, AUTH_SUCCESS } from './reducers';
+import Api from './api';
 
 /** Spotify constants */
 const CLIENT_ID = process.env.REACT_APP_SPOTIFY_ID;
@@ -24,24 +25,12 @@ const getHashParams = hash => {
 };
 
 /** Generates a random string containing numbers and letters of 16 characters */
-const generateRandomString = () =>
+const generateStateToken = () =>
     (Math.random().toString(36) + Array(16).join('0')).slice(2, 16 + 2);
-
-const redirectTo = newUrl => {
-    window.location.href = newUrl;
-};
 
 const setStateToken = state => localStorage.setItem(STATE_KEY, state);
 const getStateToken = () => localStorage.getItem(STATE_KEY);
 const removeStateToken = () => localStorage.removeItem(STATE_KEY);
-
-const generateLoginUrl = (client_id, scope, redirect_uri, state) =>
-    `https://accounts.spotify.com/authorize` +
-    `?response_type=token` +
-    `&client_id=${decodeURIComponent(client_id)}` +
-    `&scope=${decodeURIComponent(scope)}` +
-    `&redirect_uri=${decodeURIComponent(redirect_uri)}` +
-    `&state=${decodeURIComponent(state)}`;
 
 const getPathnameFromUrlString = urlString => {
     const url = new URL(urlString);
@@ -49,16 +38,16 @@ const getPathnameFromUrlString = urlString => {
 };
 
 function* redirectToLoginUrl() {
-    const state = yield call(generateRandomString);
+    const state = yield call(generateStateToken);
     const loginUrl = yield call(
-        generateLoginUrl,
+        Api.generateLoginUrl,
         CLIENT_ID,
         scope,
         REDIRECT_URI,
         state
     );
     yield call(setStateToken, state);
-    yield call(redirectTo, loginUrl);
+    yield call(Api.redirectTo, loginUrl);
 }
 
 function* watchForLoginCallback() {
