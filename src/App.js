@@ -5,7 +5,7 @@ import { AUTH_REQUEST } from './reducers';
 import logo from './logo.svg';
 import './App.css';
 
-class App extends Component {
+export class App extends Component {
     loginAction = () => {
         this.props.dispatch({ type: AUTH_REQUEST });
     };
