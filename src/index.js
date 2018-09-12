@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import { Route, Switch } from 'react-router-dom';
 import createHistory from 'history/createBrowserHistory';
-import { createStore, applyMiddleware } from 'redux';
+import { createStore, applyMiddleware, compose } from 'redux';
 import { Provider } from 'react-redux';
 import { ConnectedRouter, routerMiddleware } from 'react-router-redux';
 import createSagaMiddleware from 'redux-saga';
@@ -17,9 +17,12 @@ import registerServiceWorker from './registerServiceWorker';
 const history = createHistory();
 const sagaMiddleware = createSagaMiddleware();
 
+// redux devtools
+const composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
+
 const middleware = applyMiddleware(routerMiddleware(history), sagaMiddleware);
 
-const store = createStore(reducers, middleware);
+const store = createStore(reducers, composeEnhancers(middleware));
 
 // run saga middleware
 sagaMiddleware.run(Saga);

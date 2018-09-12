@@ -1,12 +1,13 @@
 import { call, take, put, takeLatest, all } from 'redux-saga/effects';
 import { replace } from 'react-router-redux';
 import { AUTH_FAILURE, AUTH_REQUEST, AUTH_SUCCESS } from './reducers';
+import stateToken from './stateToken';
 import Api from './api';
 
 /** Spotify constants */
 const CLIENT_ID = process.env.REACT_APP_SPOTIFY_ID;
-const REDIRECT_URI = process.env.REACT_APP_REDIRECT_URI;
-const STATE_KEY = 'spotify_auth_state';
+const REDIRECT_URI =
+    process.env.REACT_APP_REDIRECT_URI || 'http://localhost:3000/callback';
 const scope = 'user-read-private user-read-email user-library-read';
 
 /**
@@ -28,10 +29,6 @@ const getHashParams = hash => {
 const generateStateToken = () =>
     (Math.random().toString(36) + Array(16).join('0')).slice(2, 16 + 2);
 
-const setStateToken = state => localStorage.setItem(STATE_KEY, state);
-const getStateToken = () => localStorage.getItem(STATE_KEY);
-const removeStateToken = () => localStorage.removeItem(STATE_KEY);
-
 const getPathnameFromUrlString = urlString => {
     const url = new URL(urlString);
     return url.pathname;
@@ -46,7 +43,7 @@ function* redirectToLoginUrl() {
         REDIRECT_URI,
         state
     );
-    yield call(setStateToken, state);
+    yield call(stateToken.set, state);
     yield call(Api.redirectTo, loginUrl);
 }
 
@@ -60,11 +57,11 @@ function* watchForLoginCallback() {
         const params = yield call(getHashParams, action.payload.hash);
 
         const { access_token, state } = params;
-        const storedState = yield call(getStateToken);
+        const storedState = yield call(stateToken.get);
         if (access_token && (state == null || state !== storedState)) {
             yield put({ type: AUTH_FAILURE, payload: 'auth failure' });
         } else {
-            yield call(removeStateToken);
+            yield call(stateToken.remove);
             yield put({ type: AUTH_SUCCESS, payload: access_token });
             yield put(replace('/next-page'));
         }

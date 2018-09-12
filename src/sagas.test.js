@@ -1,8 +1,9 @@
 import { expectSaga } from 'redux-saga-test-plan';
 import * as matchers from 'redux-saga-test-plan/matchers';
-import { AUTH_REQUEST } from './reducers';
+import { AUTH_REQUEST, AUTH_SUCCESS, AUTH_FAILURE } from './reducers';
 import Saga from './sagas';
 import Api from './api';
+import stateToken from './stateToken';
 
 const fakeLoginUrl =
     'https://accounts.spotify.com/en/authorize?' +
@@ -15,5 +16,34 @@ it('redirects to login url after auth request', () => {
         .provide([[matchers.call.fn(Api.generateLoginUrl), fakeLoginUrl]])
         .call(Api.redirectTo, fakeLoginUrl)
         .dispatch({ type: AUTH_REQUEST })
+        .run();
+});
+
+const fakeAccessToken = 'BQAoSnm9NTE6KfFJP';
+const fakeStateToken = '7sfv9usa52u00000';
+
+// real react-router-redux event captured from redux devtools
+const fakeRedirectEvent = {
+    type: '@@router/LOCATION_CHANGE',
+    payload: {
+        pathname: '/callback',
+        search: '',
+        hash: `#access_token=${fakeAccessToken}&token_type=Bearer&expires_in=3600&state=${fakeStateToken}`
+    }
+};
+
+it('puts a success action on redirect if the state token matches', () => {
+    return expectSaga(Saga)
+        .provide([[matchers.call.fn(stateToken.get), fakeStateToken]])
+        .dispatch(fakeRedirectEvent)
+        .put({ type: AUTH_SUCCESS, payload: fakeAccessToken })
+        .run();
+});
+
+it('puts a failure action on redirect if the state token doesnt match', () => {
+    return expectSaga(Saga)
+        .provide([[matchers.call.fn(stateToken.get), null]])
+        .dispatch(fakeRedirectEvent)
+        .put({ type: AUTH_FAILURE, payload: 'auth failure' })
         .run();
 });
